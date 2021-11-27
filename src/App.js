@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { CssBaseline, Grid } from '@material-ui/core'
 
 // Components
-import { getPlacesData } from './api'
+import { getPlacesData, getWeatherData } from './api'
 import Header from './Components/Header/Header'
 import List from './Components/List/List'
 import Map from './Components/Maps/Map'
@@ -16,8 +16,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [type, setType] = useState('restaurants')
   const [rating, setRating] = useState('')
-
-  // console.log({ coordinates })
+  const [weatherData, setWeaterData] = useState([])
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -33,18 +32,27 @@ const App = () => {
   }, [rating])
 
   useEffect(() => {
-    setIsLoading(true)
-    getPlacesData(type, bounds?.sw, bounds?.ne).then(data => {
-      // console.log(data)
-      setPlaces(data)
-      setFilteredPlaces([])
-      setIsLoading(false)
-    })
-  }, [type, coordinates, bounds])
+    if (bounds.sw && bounds.ne) {
+      setIsLoading(true)
+      getWeatherData(coordinates.lat, coordinates.lng).then(data => {
+        setWeaterData(data)
+        console.log(data)
+      })
+      getPlacesData(type, bounds?.sw, bounds?.ne).then(data => {
+        // console.log(data)
+        setPlaces(data?.filter(place => place.name && place?.num_reviews > 0))
+        setFilteredPlaces([])
+        setIsLoading(false)
+      })
+    }
+  }, [type, bounds])
+
+  // console.log(places)
+  // console.log(filterPlaces)
   return (
     <>
       <CssBaseline />
-      <Header />
+      <Header setCoordinates={setCoordinates} />
       <Grid container spacing={3} style={{ width: '100%' }}>
         <Grid item xs={12} md={4}>
           <List
@@ -64,6 +72,7 @@ const App = () => {
             coordinates={coordinates}
             places={filterPlaces?.length ? filterPlaces : places}
             setChildClicked={setChildClicked}
+            weatherData={weatherData}
           />
         </Grid>
       </Grid>
